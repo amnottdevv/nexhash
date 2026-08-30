@@ -1,4 +1,11 @@
 # NexHash
+# NexHash
+
+[![Build Status](https://img.shields.io/github/actions/workflow/status/amnottdevv/nexhash/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/amnottdevv/nexhash/actions)
+[![Docs](https://img.shields.io/badge/docs-gh--pages-blue?style=flat-square&logo=githubpages)](https://amnottdevv.github.io/nexhash/)
+[![License](https://img.shields.io/github/license/amnottdevv/nexhash?style=flat-square&logo=opensourceinitiative)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/amnottdevv/nexhash?style=flat-square&logo=github)](https://github.com/amnottdevv/nexhash/releases)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square)](https://github.com/amnottdevv/nexhash)
 
 Multi-engine password, file, and message hashing CLI.
 
