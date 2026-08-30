@@ -1,0 +1,81 @@
+site_name: NexHash
+site_description: Multi-engine password, file, and message hashing CLI.
+site_url: https://amnottdevv.github.io/nexhash/
+repo_url: https://github.com/amnottdevv/nexhash
+repo_name: amnottdevv/nexhash
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - navigation.tracking
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    logo: material/lock
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Overview: index.md
+  - Installation: install.md
+  - Usage: usage.md
+  - Engines: engines.md
+  - Naming scheme: naming-scheme.md
+  - Security: security.md
+  - Architecture: architecture.md
+
+plugins:
+  - search:
+      lang: en
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/amnottdevv/nexhash
