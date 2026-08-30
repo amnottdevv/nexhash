@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'lib/**'
+      - 'Makefile'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'src/**'
+      - 'lib/**'
+      - 'Makefile'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-check:
+    name: C/C++ syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential
+
+      - name: Syntax check C++ sources (-fsyntax-only)
+        run: |
+          set -e
+          INCLUDES="-Isrc/cli -Isrc/core -Isrc/crypto -Isrc/engines -Ilib/argon2 -Ilib/bcrypt"
+          WARN="-Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function"
+          fail=0
+          for f in $(find src -name '*.cpp' -type f); do
+            echo "::group::Checking $f"
+            if ! g++ -std=c++17 -fsyntax-only $INCLUDES $WARN "$f"; then
+              fail=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $fail
+
+      - name: Syntax check C sources (-fsyntax-only)
+        run: |
+          set -e
+          fail=0
+          # Argon2 top-level + blake2 subdir
+          for f in $(find lib/argon2 -name '*.c' -type f); do
+            echo "::group::Checking $f"
+            if ! gcc -std=c89 -fsyntax-only -Wall -Ilib/argon2 "$f"; then
+              fail=1
+            fi
+            echo "::endgroup::"
+          done
+          # bcrypt (force pure-C path for portability)
+          for f in $(find lib/bcrypt -name '*.c' -type f); do
+            echo "::group::Checking $f"
+            if ! gcc -std=c89 -fsyntax-only -Wall -DBF_ASM=0 -Ilib/bcrypt "$f"; then
+              fail=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $fail
+
+      - name: Full build (catch link errors)
+        run: make -j$(nproc)
+
+      - name: Run tests
+        run: make test
