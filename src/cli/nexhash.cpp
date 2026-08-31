@@ -10,6 +10,7 @@
 #include <cctype>
 #include "nexhash_core.h"
 #include "warning.h"
+#include "excepts-cli.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -51,10 +52,10 @@ void print_ascii_art() {
 
 void print_help() {
     std::cout << YELLOW << "Usage:" << RESET << "\n";
-    std::cout << "  nexhash --encode --engine <e> --level <n> --password \"<pw>\"\n";
+    std::cout << "  nexhash --encode --engine <e> --level <n> --password \"<pw>\" [--output <file>]\n";
     std::cout << "  nexhash --encode --engine nex4mx1 --level <n> --password \"<pw>\" --text \"<msg>\"\n";
     std::cout << "  nexhash --decode --crypt \"<hash>\" --password \"<pw>\" [--text \"<msg>\"]\n";
-    std::cout << "  nexhash --hash-file --engine <e> --level <n> --file <path>\n";
+    std::cout << "  nexhash --hash-file --engine <e> --level <n> --file <path> [--output <file>]\n";
     std::cout << "  nexhash --verify-file --crypt \"<hash>\" --file <path>\n";
     std::cout << "  nexhash --check-strength --password \"<pw>\" [--engine <e> --level <n>]\n";
     std::cout << "  nexhash --list-engines\n";
@@ -73,6 +74,7 @@ void print_help() {
     std::cout << "  --text <msg>      Message text (for nex4mx1 / nex5mx1; combined with --password)\n";
     std::cout << "  --crypt <h>       Stored hash to verify against (decode / verify-file only)\n";
     std::cout << "  --file <path>     File path (for --hash-file / --verify-file / nex3fh1)\n";
+    std::cout << "  --output <path>   Write hash to file instead of stdout (encode / hash-file)\n";
     std::cout << "  --list-engines    Show all engines and their per-level parameters\n";
     std::cout << "  --benchmark       Hash a test password and print elapsed time\n";
     std::cout << "  --version, -V     Print version info and exit\n";
@@ -254,14 +256,46 @@ static double attack_rate_guesses_per_sec(nexhash::Engine engine, nexhash::Level
     return base / static_cast<double>(level);
 }
 
+// ==================== Output helpers ====================
+
+// Write the final hash/result string to stdout (default) or to a file
+// (when --output is set). On file open failure, prints a helpful error and
+// exits. On success, returns silently so the caller can continue printing
+// other diagnostic output if needed.
+static void write_result(const std::string& result, const std::string& output_path) {
+    if (output_path.empty()) {
+        std::cout << result << "\n";
+        return;
+    }
+    std::ofstream out(output_path, std::ios::binary | std::ios::trunc);
+    if (!out) {
+        nexhash::cli_errors::cannot_open_output(output_path, "ofstream open failed");
+    }
+    out << result;
+    if (!out) {
+        nexhash::cli_errors::cannot_open_output(output_path, "write failed (disk full?)");
+    }
+    out.close();
+    std::cout << GREEN << "Hash saved to: " << output_path << RESET << "\n";
+}
+
 // ==================== Main ====================
 
 int main(int argc, char* argv[]) {
     enable_ansi();
 
-    std::string command, password, crypt, engine_str, file_path, text;
+    std::string command, password, crypt, engine_str, file_path, text, output_path;
     int level = 2;  // default
     bool benchmark = false;
+
+    // All known flags, used for "did you mean" suggestions on unknown flags.
+    const std::vector<std::string> known_flags = {
+        "--encode", "--decode", "--hash-file", "--verify-file",
+        "--check-strength", "--list-engines", "--benchmark",
+        "--version", "--help",
+        "--engine", "--level", "--password", "--text",
+        "--crypt", "--file", "--output",
+    };
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -284,36 +318,52 @@ int main(int argc, char* argv[]) {
             print_help();
             return 0;
         }
+        // --- Flags with values ---
         else if (arg == "--engine") {
-            if (i + 1 < argc) engine_str = argv[++i];
-            else { std::cerr << RED << "Error: --engine requires a value." << RESET << "\n"; return 1; }
+            if (i + 1 >= argc) nexhash::cli_errors::missing_value(arg);
+            engine_str = argv[++i];
         }
         else if (arg == "--level") {
-            if (i + 1 < argc) {
-                try { level = std::stoi(argv[++i]); }
-                catch (...) { std::cerr << RED << "Error: --level must be a number." << RESET << "\n"; return 1; }
-            } else { std::cerr << RED << "Error: --level requires a value." << RESET << "\n"; return 1; }
+            if (i + 1 >= argc) nexhash::cli_errors::missing_value(arg);
+            std::string lv = argv[++i];
+            try {
+                size_t pos = 0;
+                int parsed = std::stoi(lv, &pos);
+                if (pos != lv.size() || parsed < 1 || parsed > 3) {
+                    nexhash::cli_errors::invalid_value(
+                        arg, lv, "must be 1, 2, or 3",
+                        "Level 1 = fast, 2 = balanced (default), 3 = paranoid.");
+                }
+                level = parsed;
+            } catch (const std::exception&) {
+                nexhash::cli_errors::invalid_value(
+                    arg, lv, "not a valid integer",
+                    "Level 1 = fast, 2 = balanced (default), 3 = paranoid.");
+            }
         }
         else if (arg == "--password") {
-            if (i + 1 < argc) password = argv[++i];
-            else { std::cerr << RED << "Error: --password requires a value." << RESET << "\n"; return 1; }
-        }
-        else if (arg == "--crypt") {
-            if (i + 1 < argc) crypt = argv[++i];
-            else { std::cerr << RED << "Error: --crypt requires a value." << RESET << "\n"; return 1; }
-        }
-        else if (arg == "--file") {
-            if (i + 1 < argc) file_path = argv[++i];
-            else { std::cerr << RED << "Error: --file requires a value." << RESET << "\n"; return 1; }
+            if (i + 1 >= argc) nexhash::cli_errors::missing_value(arg);
+            password = argv[++i];
         }
         else if (arg == "--text") {
-            if (i + 1 < argc) text = argv[++i];
-            else { std::cerr << RED << "Error: --text requires a value." << RESET << "\n"; return 1; }
+            if (i + 1 >= argc) nexhash::cli_errors::missing_value(arg);
+            text = argv[++i];
+        }
+        else if (arg == "--crypt") {
+            if (i + 1 >= argc) nexhash::cli_errors::missing_value(arg);
+            crypt = argv[++i];
+        }
+        else if (arg == "--file") {
+            if (i + 1 >= argc) nexhash::cli_errors::missing_value(arg);
+            file_path = argv[++i];
+        }
+        else if (arg == "--output") {
+            if (i + 1 >= argc) nexhash::cli_errors::missing_value(arg);
+            output_path = argv[++i];
         }
         else {
-            std::cerr << RED << "Unknown argument: " << arg << RESET << "\n";
-            print_help();
-            return 1;
+            // Unknown flag — suggest the closest known flag.
+            nexhash::cli_errors::unknown_flag(arg, known_flags);
         }
     }
 
@@ -437,10 +487,13 @@ int main(int argc, char* argv[]) {
         std::cout << GREEN << BOLD << "Hash successfully created!" << RESET
                   << DIM << "  (" << std::fixed << std::setprecision(2) << ms << " ms)" << RESET << "\n";
 
-        // Warn on long output
-        nexhash::warning::long_output(result.size());
+        // Warn on long output (skipped when writing to file, since the file
+        // is precisely the recommended workaround for long output).
+        if (output_path.empty()) {
+            nexhash::warning::long_output(result.size());
+        }
 
-        std::cout << result << "\n";
+        write_result(result, output_path);
         return 0;
     }
 
@@ -538,7 +591,7 @@ int main(int argc, char* argv[]) {
 
         std::cout << GREEN << BOLD << "File hash successfully created!" << RESET
                   << DIM << "  (" << std::fixed << std::setprecision(2) << ms << " ms)" << RESET << "\n";
-        std::cout << result << "\n";
+        write_result(result, output_path);
         return 0;
     }
 
