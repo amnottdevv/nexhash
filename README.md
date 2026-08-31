@@ -1,8 +1,7 @@
-# nexhash
-
-<img width="500" height="400" alt="ChatGPT Image Aug 31, 2026, 05_50_09 PM" src="https://github.com/user-attachments/assets/f9586300-93ec-47a0-9521-fcdf6ed90388" />
-
-
+<img src="https://github.com/user-attachments/assets/86dc018c-0cc4-4b1d-a445-32a937d21f44" 
+     alt="Logo" 
+     style="background: transparent; width: 1100px;">
+# Nexhash
 
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/amnottdevv/nexhash/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/amnottdevv/nexhash/actions)
