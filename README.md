@@ -1,6 +1,8 @@
-# NexHash
-# NexHash
-<img width="1349" height="745" alt="Command Prompt 31_08_2026 17 20 04" src="https://github.com/user-attachments/assets/78dd2fee-8079-4208-951c-8163cac91dbf" />
+# nexhash
+
+<img width="500" height="400" alt="ChatGPT Image Aug 31, 2026, 05_50_09 PM" src="https://github.com/user-attachments/assets/f9586300-93ec-47a0-9521-fcdf6ed90388" />
+
+
 
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/amnottdevv/nexhash/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/amnottdevv/nexhash/actions)
