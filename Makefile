@@ -126,6 +126,7 @@ APP_SRCS := \
     $(ENG_SRC)/engine_nex4px2.cpp \
     $(ENG_SRC)/engine_nex4mx1.cpp \
     $(ENG_SRC)/engine_nex5mx1.cpp \
+    $(CLI_SRC)/excepts-cli.cpp \
     $(CLI_SRC)/nexhash.cpp
 
 # Object files: source path/to/file.cpp -> build/file.o (flat names, no subdir)
