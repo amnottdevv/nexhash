@@ -1,5 +1,7 @@
 # NexHash
 # NexHash
+<img width="1349" height="745" alt="Command Prompt 31_08_2026 17 20 04" src="https://github.com/user-attachments/assets/78dd2fee-8079-4208-951c-8163cac91dbf" />
+
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/amnottdevv/nexhash/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/amnottdevv/nexhash/actions)
 [![Docs](https://img.shields.io/badge/docs-gh--pages-blue?style=flat-square&logo=githubpages)](https://amnottdevv.github.io/nexhash/)
