@@ -1,1 +1,1 @@
-This folder for build from make
+This folder for build on make
