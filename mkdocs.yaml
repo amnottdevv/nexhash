@@ -66,6 +66,7 @@ nav:
   - Overview: index.md
   - Installation: install.md
   - Usage: usage.md
+  - CLI overview: cli.md
   - Engines: engines.md
   - Naming scheme: naming-scheme.md
   - Security: security.md

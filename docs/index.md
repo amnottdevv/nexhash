@@ -36,7 +36,8 @@ See [Engines](engines.md) for parameter tables and design notes, or [Naming sche
 ## Where to go next
 
 - [Installation](install.md) — how to build NexHash from source.
-- [Usage](usage.md) — complete CLI reference.
+- [Usage](usage.md) — complete CLI flag reference.
+- [CLI overview](cli.md) — screenshots and example invocations.
 - [Engines](engines.md) — full engine specifications.
 - [Security](security.md) — threat model, recommendations, and known limitations.
 - [Architecture](architecture.md) — source tree layout and design notes.
