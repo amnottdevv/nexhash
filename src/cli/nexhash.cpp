@@ -8,6 +8,7 @@
 #include <cmath>
 #include <algorithm>
 #include <cctype>
+#include <thread>
 #include "nexhash_core.h"
 #include "warning.h"
 #include "excepts-cli.h"
@@ -48,6 +49,59 @@ void print_ascii_art() {
     std::cout << MAGENTA << "v1.0 multi-engine  " << DIM
               << "argon2 | bcrypt | nex3ph1 | nex4px1 | nex3fh1 | nex4px2 | nex4mx1 | nex5mx1" << RESET << "\n";
     std::cout << CYAN << "follow github.com/amnottdevv/nexhash" << RESET << "\n\n";
+}
+
+// Banner ASCII art shown when --decode / --verify-file starts.
+// Large art piece, magenta on a TTY, plain otherwise.
+void print_decode_banner() {
+    // Each line is a fixed-width string; padding handled by the art itself.
+    static const char* art[] = {
+        "                                                              @%%%%%%%##%%%@                                                            ",
+        "                                                            %*-++++++++++*##%@                                                          ",
+        "                                                          %*-*%           @%##@                                                         ",
+        "                                                   %+----::-#%              @%##%    @@                                               ",
+        "                                                    @%=----::-*              @@%#%@@*+@                                               ",
+        "                                                    %%@#=----:-=%              @@@#-:=@                                               ",
+        "                                                   @%##%@#=-=----+@            @#=:::=@                                               ",
+        "                                                  @@%#%%@ @*====-==#@ *-=@     @=::::#@                                              ",
+        "                                        @@@      %+%%%%%@   %+==+**%%@++%#*%@  @=--+@                                                ",
+        "                                        #**++++++*% @%%%@    %+-+#-=+==*@%%@   @=--*                                                 ",
+        "                                             @%%@@@@@#-+@   @@@@%*+**+*%+#%    @=--*@%%%%%@                                          ",
+        "                                                    #--+@  @+-+#---#+-*#=-=%   @+--#@@@@@@@@@#=*                                     ",
+        "                                                   %*--+@     @@%%@@%%%=-:::=% @+--#@*#@@@@@@*=*                                    ",
+        "                                                 @*----+@    %+-+@  @#=---:::-*@+-=#@#                                              ",
+        "                                                 @+---=@     @@@@     @*--------=-=#                                                 ",
+        "                                                 @+==#@%@               @*=-------=#                                                 ",
+        "                                                 @+%@@@%%%@               %*+++++++#                                                 ",
+        "                                                 @@    @%%%%              %#%%@                                                    ",
+        "                                                         @%%%@          @+=#%                                                      ",
+        "                                                          @@%%*==========*@                                                    ",
+        "                                                            @@@@%%@@@%@@@                                                            ",
+    };
+    constexpr size_t n = sizeof(art) / sizeof(art[0]);
+
+    std::cout << "\n";
+    std::cout << MAGENTA << BOLD;
+    for (size_t i = 0; i < n; ++i) {
+        std::cout << art[i] << "\n";
+    }
+    std::cout << RESET;
+
+    // Pulsing "decrypting..." indicator — three dots that print with a short
+    // delay, then clear the line. Falls back to a static line when stdout is
+    // not a TTY (so logs/redirects don't get escape codes or empty lines).
+    std::cout << CYAN << BOLD << "  >> decrypting" << RESET;
+    std::cout.flush();
+    for (int dot = 0; dot < 3; ++dot) {
+        // ~120ms per dot — short enough to feel snappy, long enough to see.
+        std::this_thread::sleep_for(std::chrono::milliseconds(120));
+        std::cout << CYAN << "." << RESET;
+        std::cout.flush();
+    }
+    // Carriage return + clear line, then newline so the actual output starts clean.
+    std::cout << "\r\x1b[K";
+    std::cout.flush();
+    std::cout << "\n";
 }
 
 void print_help() {
@@ -500,29 +554,34 @@ int main(int argc, char* argv[]) {
     // ============= DECODE (verify password and/or text) =============
     if (command == "decode") {
         if (crypt.empty()) {
-            std::cerr << RED << "Error: --crypt is required for --decode." << RESET << "\n";
-            return 1;
+            nexhash::cli_errors::required_missing("--crypt", "--decode");
         }
 
         // Detect message-engine hash by PHC prefix.
         bool is_msg_hash = (crypt.rfind("$nexhash$nex4mx1$", 0) == 0) ||
                            (crypt.rfind("$nexhash$nex5mx1$", 0) == 0);
 
+        if (is_msg_hash) {
+            if (password.empty() && text.empty()) {
+                nexhash::cli_errors::required_missing(
+                    "--password (or --text)", "--decode with nex4mx1/nex5mx1"
+                );
+            }
+        } else {
+            if (password.empty()) {
+                nexhash::cli_errors::required_missing("--password", "--decode");
+            }
+        }
+
+        // Cinematic banner before the actual hashing work.
+        print_decode_banner();
+
         bool ok;
         try {
             if (is_msg_hash) {
-                if (password.empty() && text.empty()) {
-                    std::cerr << RED << "Error: message engine verify requires --password and/or --text."
-                              << RESET << "\n";
-                    return 1;
-                }
                 std::cout << CYAN << "Starting message verification..." << RESET << "\n";
                 ok = nexhash::verify_message(crypt, password, text);
             } else {
-                if (password.empty()) {
-                    std::cerr << RED << "Error: --password is required for --decode." << RESET << "\n";
-                    return 1;
-                }
                 std::cout << CYAN << "Starting verification..." << RESET << "\n";
                 ok = nexhash::verify(crypt, password);
             }
@@ -597,13 +656,18 @@ int main(int argc, char* argv[]) {
 
     // ============= VERIFY-FILE =============
     if (command == "verify-file") {
-        if (file_path.empty() || crypt.empty()) {
-            std::cerr << RED << "Error: --file and --crypt are required for --verify-file." << RESET << "\n";
-            return 1;
+        if (file_path.empty()) {
+            nexhash::cli_errors::required_missing("--file", "--verify-file");
+        }
+        if (crypt.empty()) {
+            nexhash::cli_errors::required_missing("--crypt", "--verify-file");
         }
 
         // Pentest warning
         nexhash::warning::file_encryption_pentest();
+
+        // Cinematic banner before the actual verify work.
+        print_decode_banner();
 
         std::cout << CYAN << "Verifying file hash..." << RESET << "\n";
         std::cout << DIM << "  file: " << file_path << RESET << "\n";
